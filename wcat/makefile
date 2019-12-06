@@ -1,14 +1,15 @@
 CC      = gcc
-CFLAGS  = -Wall -Werror
+CFLAGS  = -Wall -Werror -lm
 RM      = rm -f
+OUT     = wcat
 
 
 default: all
 
-all: wcat
+all: $(OUT)
 
 wcat: wcat.c
-	$(CC) -o wcat wcat.c $(CFLAGS)
+	$(CC) -o $(OUT) wcat.c $(CFLAGS)
 
 clean veryclean:
-	$(RM) Hello
+	$(RM) $(OUT)
