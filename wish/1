@@ -41,41 +41,19 @@ int main(int arc, char *argv[]){
 			}	
 			arg_count++;
 		}
-		
 		cmd_args = realloc(cmd_args, (arg_count*sizeof(char*)+1));
+		cmd_args[arg_count+1] = "\0";
+		
 		if (cmd_args == NULL) {
 			fprintf(stderr, "failed to realloc user args");
 			return 1;
 		}
-	
-		cmd_args[arg_count+1] = "\0";
-		
-		struct command* c = malloc(sizeof(struct command));
-		if (c == NULL) {
-			fprintf(stderr, "failed to malloc command c");
-			return 1;
-		}	
-		
-		c->args = cmd_args;
-		c->arg_count = arg_count;
-
-		int res = handle_cmd(c);
-		printf("%d - %s - %d\n", arg_count, c->args[0], res);
-	
-		printf("freeing c\n");	
-		free(c);
-		
-		for (int i = 0; i < arg_count; i++) {
-			printf("freeing arg %d\n",i); 
-			free(cmd_args[i]);
-		}
-		printf("fressing cmd_args");
-		free(cmd_args);
-		
+		int res = handle_cmd(cmd_args);
+		printf("%d - %s - %d\n", arg_count, cmd_args[0], res);
 	}
 }
 
-int handle_cmd(struct command* cmd){
+int handle_cmd(char** cmd){
 	int status;
 	pid_t pid, w;
 
@@ -90,7 +68,7 @@ int handle_cmd(struct command* cmd){
 	}
 	else if (pid == 0){
 		// handle command
-		execvp(cmd->args[0], cmd->args);
+		execvp(cmd[0], cmd);
 		return 3;
 	}
 	else {
@@ -102,15 +80,17 @@ int handle_cmd(struct command* cmd){
 	return 0;
 }
 
-int strip_newline(struct command* cmd) {
+int strip_newline(char** cmd) {
 	char *newline = "\n";
-	char *null_char = "\0";
+	//char *null = "\0";
 
-	for (int i = 0; i < cmd->arg_count; i++) {	
-		char* line = *(cmd->args + i);
+	for (int i = 0; i < sizeof(cmd); i++) {	
+		char* line = *(cmd + i);
+		printf("%c\n", *line+(strlen(line)-1));
 		int match = strcmp( (line+strlen(line)-1), newline );
 		if (match == 0) {
-			*(line+strlen(line)-1) = *null_char;
+			printf("newline found\n");
+			//strcpy(line[strlen(line)-1], null);
 		}
 	}
 
