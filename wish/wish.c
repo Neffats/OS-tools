@@ -73,22 +73,15 @@ int main(int arc, char *argv[]){
 		c->arg_count = arg_count;
 
 		res = handle_cmd(c);
-		printf("%d - %s - %d\n", arg_count, c->args[0], res);
-	
+		if (res != 0) {
+			fprintf(stderr, "failed to handle command");
+			return 1;
+		}	
 		
-		for (int i = 0; i < arg_count; i++) {
-			printf("freeing arg %d: %p......",i, c->args[i]); 
-			free(c->args[i]);
-			printf("done\n");
-		}
-		
-		printf("freeing cmd_args: %p.....", cmd_args);
+		// Cleanup memory
+		free(c->args[0]);
 		free(cmd_args);
-		printf("done\n");
-		
-		printf("freeing c: %p......", c);	
 		free(c);
-		printf("done\n");
 	}
 }
 
