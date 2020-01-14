@@ -9,22 +9,35 @@
 
 int main(int arc, char *argv[]){
 	//char* path = "/usr/bin/";
+	char* usr_input;
+	ssize_t read;
+	size_t len;
 
+	int arg_count;
+	char** cmd_args;
+	char* arg = NULL;
+	const char space[1] = " ";
+	
+	struct command* c;
+	int res;
+	
 	while (1) {
-		char* usr_input = NULL;
-		ssize_t read;
-		size_t len = 0;
+		// Reset everything for next loop.
+		usr_input = NULL;
+		read = 0;
+		len = 0;
+		res = 0;
+
 		printf("wish> ");
 		read = getline(&usr_input, &len, stdin);
 		if (read == -1) {
 			fprintf(stderr, "failed to get user input");
 			return 1;
-		}	
+		}
 		
-		int arg_count = 0;
-		char** cmd_args = malloc(MAX_ARG_LEN*sizeof(char*));
-		char* arg = NULL;
-		const char space[1] = " ";
+		arg_count = 0;
+		cmd_args = malloc(MAX_ARG_LEN*sizeof(char*));
+		arg = NULL;
 		// we don't have to pass the string again after this. 
 		arg = strtok(usr_input, space);
 		// if we don't find a token we just ignore command.
@@ -50,7 +63,7 @@ int main(int arc, char *argv[]){
 	
 		cmd_args[arg_count+1] = "\0";
 		
-		struct command* c = malloc(sizeof(struct command));
+		c = malloc(sizeof(struct command));
 		if (c == NULL) {
 			fprintf(stderr, "failed to malloc command c");
 			return 1;
@@ -59,19 +72,23 @@ int main(int arc, char *argv[]){
 		c->args = cmd_args;
 		c->arg_count = arg_count;
 
-		int res = handle_cmd(c);
+		res = handle_cmd(c);
 		printf("%d - %s - %d\n", arg_count, c->args[0], res);
 	
-		printf("freeing c\n");	
-		free(c);
 		
 		for (int i = 0; i < arg_count; i++) {
-			printf("freeing arg %d\n",i); 
-			free(cmd_args[i]);
+			printf("freeing arg %d: %p......",i, c->args[i]); 
+			free(c->args[i]);
+			printf("done\n");
 		}
-		printf("fressing cmd_args");
-		free(cmd_args);
 		
+		printf("freeing cmd_args: %p.....", cmd_args);
+		free(cmd_args);
+		printf("done\n");
+		
+		printf("freeing c: %p......", c);	
+		free(c);
+		printf("done\n");
 	}
 }
 
