@@ -9,78 +9,26 @@
 
 int main(int arc, char *argv[]){
 	//char* path = "/usr/bin/";
-	char* usr_input;
-	ssize_t read;
-	size_t len;
-
-	int arg_count;
-	char** cmd_args;
-	char* arg = NULL;
-	const char space[1] = " ";
-	
-	struct command* c;
 	int res;
 	
 	while (1) {
 		// Reset everything for next loop.
-		usr_input = NULL;
-		read = 0;
-		len = 0;
 		res = 0;
 
 		printf("wish> ");
-		read = getline(&usr_input, &len, stdin);
-		if (read == -1) {
-			fprintf(stderr, "failed to get user input");
-			return 1;
-		}
-		
-		arg_count = 0;
-		cmd_args = malloc(MAX_ARG_LEN*sizeof(char*));
-		arg = NULL;
-		// we don't have to pass the string again after this. 
-		arg = strtok(usr_input, space);
-		// if we don't find a token we just ignore command.
-		if (arg == NULL){
+		struct command* c = get_input();
+		if (c == NULL) {
 			continue;
 		}
-		cmd_args[arg_count] = arg;
-		arg_count++;
-
-		while ((arg = strtok(NULL, space)) != NULL) {
-			cmd_args[arg_count] = arg;
-			if (arg_count > MAX_ARG_LEN){
-				break;
-			}	
-			arg_count++;
-		}
-		
-		cmd_args = realloc(cmd_args, (arg_count*sizeof(char*)+1));
-		if (cmd_args == NULL) {
-			fprintf(stderr, "failed to realloc user args");
-			return 1;
-		}
-	
-		cmd_args[arg_count+1] = "\0";
-		
-		c = malloc(sizeof(struct command));
-		if (c == NULL) {
-			fprintf(stderr, "failed to malloc command c");
-			return 1;
-		}	
-		
-		c->args = cmd_args;
-		c->arg_count = arg_count;
-
 		res = handle_cmd(c);
 		if (res != 0) {
-			fprintf(stderr, "failed to handle command");
+			fprintf(stderr, "failed to handle command\n");
 			return 1;
 		}	
 		
 		// Cleanup memory
 		free(c->args[0]);
-		free(cmd_args);
+		free(c->args);
 		free(c);
 	}
 }
@@ -125,4 +73,62 @@ int strip_newline(struct command* cmd) {
 	}
 
 	return 0;
+}
+
+struct command* get_input() {
+	char* usr_input = NULL;
+	ssize_t read = 0;
+	size_t len = 0;
+
+	int arg_count = 0;
+	char** cmd_args;
+	char* arg = NULL;
+	const char space[1] = " ";
+	
+	struct command* c;
+	
+	read = getline(&usr_input, &len, stdin);
+	if (read == -1) {
+		fprintf(stderr, "failed to get user input\n");
+		return NULL;
+	}
+	
+	arg_count = 0;
+	cmd_args = malloc(MAX_ARG_LEN*sizeof(char*));
+	arg = NULL;
+	// we don't have to pass the string again after this. 
+	arg = strtok(usr_input, space);
+	// if we don't find a token we just ignore command.
+	if (arg == NULL){
+		return NULL;
+	}
+	cmd_args[arg_count] = arg;
+	arg_count++;
+
+	while ((arg = strtok(NULL, space)) != NULL) {
+		cmd_args[arg_count] = arg;
+		if (arg_count > MAX_ARG_LEN){
+			break;
+		}	
+		arg_count++;
+	}
+	
+	cmd_args = realloc(cmd_args, (arg_count*sizeof(char*)+1));
+	if (cmd_args == NULL) {
+		fprintf(stderr, "failed to realloc user args\n");
+		return NULL;
+	}
+
+	cmd_args[arg_count+1] = "\0";
+	
+	c = malloc(sizeof(struct command));
+	if (c == NULL) {
+		fprintf(stderr, "failed to malloc command c\n");
+		return NULL;
+	}	
+	
+	c->args = cmd_args;
+	c->arg_count = arg_count;
+	
+	return c;
 }

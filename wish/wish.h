@@ -18,5 +18,6 @@ struct command {
 
 int handle_cmd(struct command* cmd);
 int strip_newline(struct command* cmd); 
+struct command* get_input();
 
 #endif
