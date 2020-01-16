@@ -7,10 +7,25 @@
 #include <sys/wait.h>
 #include "wish.h"
 
-int main(int arc, char *argv[]){
+int main(int argc, char *argv[]){
 	//char* path = "/usr/bin/";
-	int res;
+	int result = 0;
 	
+	switch(argc) {
+		// No arg given so run in interactive mode.
+		case 1:
+			result = interactive_mode();
+		default:
+			result = 1;
+	}
+
+	if (result != 0) {
+		return 1;
+	}
+}
+
+int interactive_mode() {
+	int res;
 	while (1) {
 		// Reset everything for next loop.
 		res = 0;
@@ -31,48 +46,6 @@ int main(int arc, char *argv[]){
 		free(c->args);
 		free(c);
 	}
-}
-
-int handle_cmd(struct command* cmd){
-	int status;
-	pid_t pid, w;
-
-	int strip = strip_newline(cmd);	
-	if (strip != 0) {
-		return 1;	
-	}
-	
-	pid = fork();
-	if (pid == -1){
-		return 2;
-	}
-	else if (pid == 0){
-		// handle command
-		execvp(cmd->args[0], cmd->args);
-		return 3;
-	}
-	else {
-		if ((w = wait(&status)) < 0) {
-			return 4;
-		}
-	}
-
-	return 0;
-}
-
-int strip_newline(struct command* cmd) {
-	char *newline = "\n";
-	char *null_char = "\0";
-
-	for (int i = 0; i < cmd->arg_count; i++) {	
-		char* line = *(cmd->args + i);
-		int match = strcmp( (line+strlen(line)-1), newline );
-		if (match == 0) {
-			*(line+strlen(line)-1) = *null_char;
-		}
-	}
-
-	return 0;
 }
 
 struct command* get_input() {
@@ -132,3 +105,54 @@ struct command* get_input() {
 	
 	return c;
 }
+
+int handle_cmd(struct command* cmd){
+	int status;
+	pid_t pid, w;
+
+	int strip = strip_newline(cmd);	
+	char exit_cmd[] = "exit";
+
+	if (strip != 0) {
+		return 1;	
+	}
+	
+	if (cmd->arg_count == 1) {
+		if ((strcmp(cmd->args[0], exit_cmd)) == 0) {
+			exit(0);
+		}
+	}
+
+	pid = fork();
+	if (pid == -1){
+		return 2;
+	}
+	else if (pid == 0){
+		// handle command
+		execvp(cmd->args[0], cmd->args);
+		return 3;
+	}
+	else {
+		if ((w = wait(&status)) < 0) {
+			return 4;
+		}
+	}
+
+	return 0;
+}
+
+int strip_newline(struct command* cmd) {
+	char *newline = "\n";
+	char *null_char = "\0";
+
+	for (int i = 0; i < cmd->arg_count; i++) {	
+		char* line = *(cmd->args + i);
+		int match = strcmp( (line+strlen(line)-1), newline );
+		if (match == 0) {
+			*(line+strlen(line)-1) = *null_char;
+		}
+	}
+
+	return 0;
+}
+

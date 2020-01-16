@@ -16,6 +16,7 @@ struct command {
 	int arg_count;
 };
 
+int interactive_mode(); 
 int handle_cmd(struct command* cmd);
 int strip_newline(struct command* cmd); 
 struct command* get_input();
