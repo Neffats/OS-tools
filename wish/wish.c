@@ -42,22 +42,32 @@ int interactive_mode() {
 		}	
 		
 		// Cleanup memory
+		// We only need to free args[0] since strtok() doesn't allocate any extra memory.
 		free(c->args[0]);
 		free(c->args);
 		free(c);
 	}
 }
 
+/*
+int batch_mode(char* batch_file) {
+	char* commands;
+
+	// Check that file exists
+	if ( access(batch_file, F_OK) != 0 ) {
+		return 1;
+	}
+
+	FILE *fp = fopen(batch_file, "r");
+
+	return 0;
+}*/
+
 struct command* get_input() {
 	char* usr_input = NULL;
 	ssize_t read = 0;
 	size_t len = 0;
 
-	int arg_count = 0;
-	char** cmd_args;
-	char* arg = NULL;
-	const char space[1] = " ";
-	
 	struct command* c;
 	
 	read = getline(&usr_input, &len, stdin);
@@ -66,11 +76,22 @@ struct command* get_input() {
 		return NULL;
 	}
 	
-	arg_count = 0;
+	c = format_command(usr_input);
+
+	return c;
+}
+
+struct command* format_command(char* cmd) {
+	int arg_count = 0;
+	char** cmd_args;
+	char* arg = NULL;
+	const char space[1] = " ";
+	struct command* c;
+	
 	cmd_args = malloc(MAX_ARG_LEN*sizeof(char*));
 	arg = NULL;
 	// we don't have to pass the string again after this. 
-	arg = strtok(usr_input, space);
+	arg = strtok(cmd, space);
 	// if we don't find a token we just ignore command.
 	if (arg == NULL){
 		return NULL;
@@ -124,7 +145,7 @@ int handle_cmd(struct command* cmd){
 	}
 
 	pid = fork();
-	if (pid == -1){
+	if (pid < 0){
 		return 2;
 	}
 	else if (pid == 0){

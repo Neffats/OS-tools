@@ -17,8 +17,10 @@ struct command {
 };
 
 int interactive_mode(); 
+int batch_mode(char* batch_file);
 int handle_cmd(struct command* cmd);
 int strip_newline(struct command* cmd); 
 struct command* get_input();
+struct command* format_command(char* cmd);
 
 #endif
