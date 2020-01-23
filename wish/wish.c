@@ -15,11 +15,14 @@ int main(int argc, char *argv[]){
 		// No arg given so run in interactive mode.
 		case 1:
 			result = interactive_mode();
+		case 2:
+			result = batch_mode(argv[1]);
 		default:
 			result = 1;
 	}
 
 	if (result != 0) {
+		printf("failed with: %d\n", result);
 		return 1;
 	}
 }
@@ -43,16 +46,12 @@ int interactive_mode() {
 		
 		// Cleanup memory
 		// We only need to free args[0] since strtok() doesn't allocate any extra memory.
-		free(c->args[0]);
-		free(c->args);
-		free(c);
+		free_command(c);
 	}
 }
 
-/*
-int batch_mode(char* batch_file) {
-	char* commands;
 
+int batch_mode(char* batch_file) {
 	// Check that file exists
 	if ( access(batch_file, F_OK) != 0 ) {
 		return 1;
@@ -60,8 +59,61 @@ int batch_mode(char* batch_file) {
 
 	FILE *fp = fopen(batch_file, "r");
 
+	ssize_t read;
+	size_t len = 0;
+	char *line = NULL;
+	int line_count = 1;
+	struct command** commands;
+	struct command* cmd = NULL;
+	
+	commands = malloc(sizeof(struct command*)); 
+	if (commands == NULL) {
+		fprintf(stderr, "malloc failed\n");
+		return 1;
+	}
+	
+	while ((read = getline(&line, &len, fp)) != -1) {
+		printf("reading line: %d\n", line_count);
+		printf("line: %s\n", line);
+		cmd = format_command(line);
+		if (cmd == NULL) {
+			return 2;
+		}
+
+		commands[line_count-1] = cmd;
+		line_count++;
+
+		// Is this too expensive? 
+		// Might be better to allocate big buffer to start and resize after the loop?
+		commands = realloc(commands, line_count * sizeof(struct command*));
+		if (commands == NULL) {
+			fprintf(stderr, "malloc failed\n");
+			return 1;
+		}
+		
+		// we need to reset the pointer each time so that getline allocates a new buffer for 
+		// each line.
+		line = NULL; 
+	}
+	
+	fclose(fp);
+
+	printf("handling commands\n");
+	for (int i = 0; i < line_count; i++) {
+		int result = handle_cmd(commands[i-1]);
+		if (result != 0) {
+			return 3;
+		}
+	}	
+	
+	for (int i = 0; i < line_count; i++) {
+		free_command(commands[i-1]);
+	}	
+	
+	free(commands);
+
 	return 0;
-}*/
+}
 
 struct command* get_input() {
 	char* usr_input = NULL;
@@ -177,3 +229,8 @@ int strip_newline(struct command* cmd) {
 	return 0;
 }
 
+void free_command(struct command* c) {
+	free(c->args[0]);
+	free(c->args);
+	free(c);
+}

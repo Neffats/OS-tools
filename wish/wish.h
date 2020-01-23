@@ -16,6 +16,8 @@ struct command {
 	int arg_count;
 };
 
+void free_command(struct command* c);
+
 int interactive_mode(); 
 int batch_mode(char* batch_file);
 int handle_cmd(struct command* cmd);

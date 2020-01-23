@@ -1,0 +1,3 @@
+ls -la
+pwd
+echo "Hello world!"
