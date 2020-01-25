@@ -22,7 +22,7 @@ int main(int argc, char *argv[]){
 	}
 
 	if (result != 0) {
-		printf("failed with: %d\n", result);
+		printf("\nfailed with: %d\n", result);
 		return 1;
 	}
 }
@@ -62,6 +62,7 @@ int batch_mode(char* batch_file) {
 	ssize_t read;
 	size_t len = 0;
 	char *line = NULL;
+	// Wh
 	int line_count = 1;
 	struct command** commands;
 	struct command* cmd = NULL;
@@ -79,16 +80,15 @@ int batch_mode(char* batch_file) {
 		if (cmd == NULL) {
 			return 2;
 		}
-
+		
 		commands[line_count-1] = cmd;
 		line_count++;
-
 		// Is this too expensive? 
 		// Might be better to allocate big buffer to start and resize after the loop?
 		commands = realloc(commands, line_count * sizeof(struct command*));
 		if (commands == NULL) {
 			fprintf(stderr, "malloc failed\n");
-			return 1;
+			return 3;
 		}
 		
 		// we need to reset the pointer each time so that getline allocates a new buffer for 
@@ -100,14 +100,15 @@ int batch_mode(char* batch_file) {
 
 	printf("handling commands\n");
 	for (int i = 0; i < line_count; i++) {
-		int result = handle_cmd(commands[i-1]);
+		int result = handle_cmd(commands[i]);
+		printf("result: %d\n", result);
 		if (result != 0) {
-			return 3;
+			return 4;
 		}
 	}	
 	
 	for (int i = 0; i < line_count; i++) {
-		free_command(commands[i-1]);
+		free_command(commands[i]);
 	}	
 	
 	free(commands);
@@ -201,8 +202,13 @@ int handle_cmd(struct command* cmd){
 		return 2;
 	}
 	else if (pid == 0){
-		// handle command
-		execvp(cmd->args[0], cmd->args);
+		printf("exec (%d): ", cmd->arg_count);
+		for (int i = 0; i < cmd->arg_count; i++) {
+			printf("%s ", cmd->args[i]);
+		}
+		printf("\n");
+		int r = execvp(cmd->args[0], cmd->args);
+		printf("error: %d\n", r);
 		return 3;
 	}
 	else {
