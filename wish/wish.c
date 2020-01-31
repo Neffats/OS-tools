@@ -17,8 +17,6 @@ int main(int argc, char *argv[]){
 			result = interactive_mode();
 		case 2:
 			result = batch_mode(argv[1]);
-		default:
-			result = 1;
 	}
 
 	if (result != 0) {
@@ -74,8 +72,8 @@ int batch_mode(char* batch_file) {
 	}
 	
 	while ((read = getline(&line, &len, fp)) != -1) {
-		printf("reading line: %d\n", line_count);
-		printf("line: %s\n", line);
+		//printf("reading line: %d\n", line_count);
+		//printf("line: %s\n", line);
 		cmd = format_command(line);
 		if (cmd == NULL) {
 			return 2;
@@ -98,16 +96,16 @@ int batch_mode(char* batch_file) {
 	
 	fclose(fp);
 
-	printf("handling commands\n");
-	for (int i = 0; i < line_count; i++) {
+	//printf("handling commands: %d\n", line_count);
+	for (int i = 0; i < line_count-1; i++) {
 		int result = handle_cmd(commands[i]);
-		printf("result: %d\n", result);
+		//printf("result: %d\n", result);
 		if (result != 0) {
 			return 4;
 		}
 	}	
 	
-	for (int i = 0; i < line_count; i++) {
+	for (int i = 0; i < line_count-1; i++) {
 		free_command(commands[i]);
 	}	
 	
@@ -202,13 +200,7 @@ int handle_cmd(struct command* cmd){
 		return 2;
 	}
 	else if (pid == 0){
-		printf("exec (%d): ", cmd->arg_count);
-		for (int i = 0; i < cmd->arg_count; i++) {
-			printf("%s ", cmd->args[i]);
-		}
-		printf("\n");
-		int r = execvp(cmd->args[0], cmd->args);
-		printf("error: %d\n", r);
+		execvp(cmd->args[0], cmd->args);
 		return 3;
 	}
 	else {
