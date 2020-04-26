@@ -10,6 +10,7 @@
 #include <sys/wait.h>
 
 #define MAX_ARG_LEN 100
+#define ALPHABET_SIZE 127
 
 struct command {
 	char** args;
@@ -24,5 +25,6 @@ int handle_cmd(struct command* cmd);
 int strip_newline(struct command* cmd); 
 struct command* get_input();
 struct command* format_command(char* cmd);
+int hash(char* key);
 
 #endif

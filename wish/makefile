@@ -1,16 +1,17 @@
 CC      = gcc
 CFLAGS  = -Wall -Werror 
+LDFLAGS = 
 RM      = rm -f
 TARG    = wish
-SRCS    = wish.c
+OBJFILES = wish.o main.o
 BIN     = bin/
 
 default: all
 
 all: $(TARG)
 
-$(TARG): $(SRCS)
-	$(CC) -g -o $(BIN)$(TARG) $(SRCS) $(CFLAGS)
+$(TARG): $(OBJFILES)
+	$(CC) $(CFLAGS) -g -o $(BIN)$(TARG) $(OBJFILES) $(LDFLAGS)
 
 clean veryclean:
-	$(RM) $(OUT)
+	$(RM) $(OBJFILES) $(OUT)

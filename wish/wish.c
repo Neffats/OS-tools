@@ -7,24 +7,6 @@
 #include <sys/wait.h>
 #include "wish.h"
 
-int main(int argc, char *argv[]){
-	//char* path = "/usr/bin/";
-	int result = 0;
-	
-	switch(argc) {
-		// No arg given so run in interactive mode.
-		case 1:
-			result = interactive_mode();
-		case 2:
-			result = batch_mode(argv[1]);
-	}
-
-	if (result != 0) {
-		printf("\nfailed with: %d\n", result);
-		return 1;
-	}
-}
-
 int interactive_mode() {
 	int res;
 	while (1) {
@@ -177,11 +159,13 @@ struct command* format_command(char* cmd) {
 	
 	return c;
 }
+
 /*
 bool is_builtin(struct command *cmd) {
 	 * Built-in commands:
 	 *  - cd
 	 *  - exit
+	
 	return false;
 }
 */
@@ -240,3 +224,16 @@ void free_command(struct command* c) {
 	free(c->args);
 	free(c);
 }
+
+int hash(char* key) {
+	int key_len = strlen(key);
+	int hash = 0;
+	
+	for (int i = 0; i < key_len; i++) {
+		hash = hash + ((ALPHABET_SIZE^((key_len-1)-(i+1))) * (int)key[i]);		
+	}
+
+	return hash;
+}
+
+
