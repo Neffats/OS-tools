@@ -177,6 +177,14 @@ struct command* format_command(char* cmd) {
 	
 	return c;
 }
+/*
+bool is_builtin(struct command *cmd) {
+	 * Built-in commands:
+	 *  - cd
+	 *  - exit
+	return false;
+}
+*/
 
 int handle_cmd(struct command* cmd){
 	int status;
