@@ -14,7 +14,7 @@ int interactive_mode() {
 		res = 0;
 
 		printf("wish> ");
-		struct command* c = get_input();
+		command *c = get_input();
 		if (c == NULL) {
 			continue;
 		}
@@ -44,8 +44,8 @@ int batch_mode(char* batch_file) {
 	char *line = NULL;
 	// Wh
 	int line_count = 1;
-	struct command** commands;
-	struct command* cmd = NULL;
+	command **commands;
+	command *cmd = NULL;
 	
 	commands = malloc(sizeof(struct command*)); 
 	if (commands == NULL) {
@@ -54,8 +54,6 @@ int batch_mode(char* batch_file) {
 	}
 	
 	while ((read = getline(&line, &len, fp)) != -1) {
-		//printf("reading line: %d\n", line_count);
-		//printf("line: %s\n", line);
 		cmd = format_command(line);
 		if (cmd == NULL) {
 			return 2;
@@ -74,14 +72,14 @@ int batch_mode(char* batch_file) {
 		// we need to reset the pointer each time so that getline allocates a new buffer for 
 		// each line.
 		line = NULL; 
+		printf("----------\n");
 	}
 	
 	fclose(fp);
 
-	//printf("handling commands: %d\n", line_count);
+	printf("handling commands: %d\n", line_count);
 	for (int i = 0; i < line_count-1; i++) {
 		int result = handle_cmd(commands[i]);
-		//printf("result: %d\n", result);
 		if (result != 0) {
 			return 4;
 		}
@@ -96,7 +94,7 @@ int batch_mode(char* batch_file) {
 	return 0;
 }
 
-struct command* get_input() {
+command* get_input() {
 	char* usr_input = NULL;
 	ssize_t read = 0;
 	size_t len = 0;
@@ -114,12 +112,12 @@ struct command* get_input() {
 	return c;
 }
 
-struct command* format_command(char* cmd) {
+command* format_command(char* cmd) {
 	int arg_count = 0;
 	char** cmd_args;
 	char* arg = NULL;
 	const char space[1] = " ";
-	struct command* c;
+	command* c;
 	
 	cmd_args = malloc(MAX_ARG_LEN*sizeof(char*));
 	arg = NULL;
@@ -140,15 +138,16 @@ struct command* format_command(char* cmd) {
 		arg_count++;
 	}
 	
-	cmd_args = realloc(cmd_args, (arg_count*sizeof(char*)+1));
+	// TODO: Find out why if we use arg_count+1 instead of +2 the next
+	// call to malloc fails.
+	cmd_args = realloc(cmd_args, ( (arg_count+2) * sizeof(char*) ) );
 	if (cmd_args == NULL) {
 		fprintf(stderr, "failed to realloc user args\n");
 		return NULL;
 	}
 
 	cmd_args[arg_count+1] = "\0";
-	
-	c = malloc(sizeof(struct command));
+	c = malloc(sizeof(command));
 	if (c == NULL) {
 		fprintf(stderr, "failed to malloc command c\n");
 		return NULL;
@@ -160,51 +159,79 @@ struct command* format_command(char* cmd) {
 	return c;
 }
 
-/*
-bool is_builtin(struct command *cmd) {
-	 * Built-in commands:
-	 *  - cd
-	 *  - exit
-	
-	return false;
-}
-*/
 
-int handle_cmd(struct command* cmd){
-	int status;
-	pid_t pid, w;
-
-	int strip = strip_newline(cmd);	
+command_type identify_command(command *cmd) {
 	char exit_cmd[] = "exit";
+	char cd_cmd[] = "cd";
 
-	if (strip != 0) {
-		return 1;	
+	if ((strcmp(cmd->args[0], exit_cmd)) == 0) {
+	  return CMD_EXIT;
 	}
-	
-	if (cmd->arg_count == 1) {
-		if ((strcmp(cmd->args[0], exit_cmd)) == 0) {
-			exit(0);
-		}
-	}
-
-	pid = fork();
-	if (pid < 0){
-		return 2;
-	}
-	else if (pid == 0){
-		execvp(cmd->args[0], cmd->args);
-		return 3;
+	else if ((strcmp(cmd->args[0], cd_cmd)) == 0) {
+	  return CMD_CD;
 	}
 	else {
-		if ((w = wait(&status)) < 0) {
-			return 4;
-		}
+	  return CMD_OTHER;
 	}
-
-	return 0;
 }
 
-int strip_newline(struct command* cmd) {
+int handle_builtin_cmd(command *cmd, command_type type) {
+  switch(type) {
+  case CMD_EXIT:
+	  exit(0);
+  case CMD_CD:
+	if ((chdir(cmd->args[1])) != 0) {
+	  return 2;
+	}
+	return 0;
+  default:
+	return 3;
+  }
+}
+
+int handle_other_cmd(command *cmd, command_type type) {
+  if (type != CMD_OTHER) {
+	return 1;
+  }
+  int status;
+  pid_t pid, w;
+  
+  pid = fork();
+  if (pid < 0){
+	return 3;
+  }
+  else if (pid == 0){
+	execvp(cmd->args[0], cmd->args);
+	return 4;
+  }
+  else {
+	if ((w = wait(&status)) < 0) {
+	  return 5;
+	}
+  }
+  
+  return 0;
+}
+
+int handle_cmd(command *cmd) {
+  int strip = strip_newline(cmd);	
+  if (strip != 0) {
+	return 1;	
+  }
+  
+  command_type cmd_type = identify_command(cmd);
+  switch(cmd_type) {
+  case CMD_CD:
+  case CMD_EXIT:
+	return handle_builtin_cmd(cmd, cmd_type);
+  case CMD_OTHER:
+	return handle_other_cmd(cmd, cmd_type);
+  default:
+	return 5; 
+  }
+}
+
+int strip_newline(command* cmd) {
 	char *newline = "\n";
 	char *null_char = "\0";
 
@@ -219,7 +246,7 @@ int strip_newline(struct command* cmd) {
 	return 0;
 }
 
-void free_command(struct command* c) {
+void free_command(command* c) {
 	free(c->args[0]);
 	free(c->args);
 	free(c);
